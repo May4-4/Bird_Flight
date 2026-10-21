@@ -53,6 +53,7 @@ public class DecorGenerate : MonoBehaviour
             if (IsFarEnough(pos) && !TouchesOtherTree(pos, radius))
             {
                 obj.transform.position = pos;
+               
                 placed.Add((pos, radius));
                 return;
             }
