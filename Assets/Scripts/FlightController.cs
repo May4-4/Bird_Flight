@@ -1,398 +1,195 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class FlightController : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+public class VRFlightController : MonoBehaviour
 {
-    private PlayerInput playerInput;
-
-    [Header("Références")]
-    public Transform leftWingPivot;
-    public Transform rightWingPivot;
+    [Header("Références XR")]
+    public Transform head;          // Main Camera
+    public Transform leftHand;      // Left Controller
+    public Transform rightHand;     // Right Controller
+    public CapsuleCollider bodyCollider; // optionnel : suit ta tête au sol
 
     [Header("Battement")]
-    public float flapForwardForce = 10f;
-    public float flapUpForce = 6f;
-    public float takeoffUpForce = 14f;
+    public float minFlapSpeed = 0.8f;      // m/s vers le bas, par main
+    public float flapUpForce = 25f;
+    public float takeoffMultiplier = 1.5f; // bonus au sol
+    public float armsSpreadMin = 0.35f;    // écart horizontal mains/tête (m)
+    [Range(0f, 1f)] public float symmetryTolerance = 0.5f;
+    public float flapSmoothing = 10f;
+
+    [Header("Inclinaison")]
+    public float leanDeadzone = 0.08f;     // m
+    public float leanMaxDistance = 0.30f;  // m
+    public float leanForce = 12f;
 
     [Header("Portance")]
-    [Range(0f, 1f)]
-    public float glideLiftRatio = 0.85f;
-
+    [Range(0f, 1f)] public float glideLiftRatio = 0.85f;
     public float glideSpeed = 8f;
 
-    [Header("Traînée")]
+    [Header("Traînée / vitesse")]
     public float dragCoefficient = 0.08f;
-
-    [Header("Vitesses")]
-    public float maxForwardSpeed = 12f;
-
-    [Header("Direction")]
-    public float turnSpeed = 50f;
-    public float pitchSpeed = 30f;
-
-    [Header("Animation des ailes")]
-    public float flapFrequency = 4f;
-    public float flapAngle = 45f;
+    public float maxHorizontalSpeed = 12f;
 
     private Rigidbody rb;
+    private bool isGrounded;
 
-    private Vector2 flightDirection;
-
-    private bool flapHeld = false;
-    private bool isGrounded = false;
-
-    private float flapTimer = 0f;
+    private Vector3 prevLeftLocal, prevRightLocal;
+    private float flapStrength;
+    private Vector3 neutralHeadLocal;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        playerInput = GetComponent<PlayerInput>();
+        rb.freezeRotation = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        prevLeftLocal = HandLocal(leftHand);
+        prevRightLocal = HandLocal(rightHand);
+        neutralHeadLocal = HeadLocal();
+    }
+
+    // Position de la tête dans le repère de l'XR Origin
+    Vector3 HeadLocal() => transform.InverseTransformPoint(head.position);
+
+    // Position de la main relative à la tête, dans le repère de l'XR Origin
+    Vector3 HandLocal(Transform hand) =>
+        transform.InverseTransformPoint(hand.position) - HeadLocal();
+
+    void Update()
+    {
+        UpdateFlap();
     }
 
     void FixedUpdate()
     {
-        // Lit l'état RÉEL actuel de Space à chaque pas physique
-        flapHeld = playerInput.actions["Flap"].IsPressed();
+        Vector3 headLocal = HeadLocal();
 
-        HandleFlightDirection();
-
-        if (flapHeld)
-        {
-            ApplyFlappingForce();
-        }
-
-        ApplyLift();
-        ApplyDrag();
-
-        LimitForwardSpeed();
-
-        Debug.Log(
-            "Flap: " + flapHeld +
-            " | Vy: " + rb.linearVelocity.y +
-            " | Y: " + transform.position.y
-        );
-    }
-
-    void Update()
-    {
-        AnimateWings();
-    }
-
-    // ==================================================
-    // INPUT : BATTEMENT
-    // ==================================================
-
-    // ==================================================
-    // BATTEMENT
-    // ==================================================
-
-    void ApplyFlappingForce()
-    {
         if (isGrounded)
         {
-            /*
-             * Décollage :
-             * forte poussée verticale +
-             * début de vitesse vers l'avant.
-             */
-            Vector3 takeoffForce =
-                Vector3.up * takeoffUpForce
-                + transform.forward * flapForwardForce;
+            // Marche physique : on recalibre le neutre en continu
+            neutralHeadLocal = headLocal;
 
-            rb.AddForce(
-                takeoffForce,
-                ForceMode.Force
-            );
+            // Le collider suit la tête dans la salle
+            if (bodyCollider != null)
+            {
+                Vector3 c = bodyCollider.center;
+                bodyCollider.center = new Vector3(headLocal.x, c.y, headLocal.z);
+            }
         }
         else
         {
-            /*
-             * En vol :
-             * le battement donne surtout de la poussée
-             * vers l'avant, avec une composante verticale.
-             */
-            Vector3 flapForce =
-                transform.forward * flapForwardForce
-                + Vector3.up * flapUpForce;
-
-            rb.AddForce(
-                flapForce,
-                ForceMode.Force
-            );
+            ApplyLean(headLocal);
         }
+
+        ApplyFlapForce();
+        ApplyLift();
+        ApplyDrag();
+        LimitHorizontalSpeed();
     }
 
     // ==================================================
-    // PORTANCE
+    // DÉTECTION DU BATTEMENT
     // ==================================================
+    void UpdateFlap()
+    {
+        float dt = Time.deltaTime;
+        if (dt <= 0f) return;
 
+        Vector3 l = HandLocal(leftHand);
+        Vector3 r = HandLocal(rightHand);
+
+        // Vitesse verticale (vers le bas = positif)
+        float downL = Mathf.Max(0f, -(l.y - prevLeftLocal.y) / dt);
+        float downR = Mathf.Max(0f, -(r.y - prevRightLocal.y) / dt);
+
+        prevLeftLocal = l;
+        prevRightLocal = r;
+
+        // Bras écartés ? (distance horizontale main/tête)
+        bool armsSpread =
+            new Vector2(l.x, l.z).magnitude > armsSpreadMin &&
+            new Vector2(r.x, r.z).magnitude > armsSpreadMin;
+
+        float slow = Mathf.Min(downL, downR);
+        float fast = Mathf.Max(downL, downR);
+        bool symmetric = fast > 0f && slow / fast >= symmetryTolerance;
+
+        float target = 0f;
+        if (armsSpread && symmetric && slow > minFlapSpeed)
+            target = (downL + downR) * 0.5f;
+
+        flapStrength = Mathf.Lerp(flapStrength, target, flapSmoothing * dt);
+    }
+
+    void ApplyFlapForce()
+    {
+        if (flapStrength < 0.01f) return;
+
+        float force = flapStrength * flapUpForce;
+        if (isGrounded) force *= takeoffMultiplier;
+
+        rb.AddForce(Vector3.up * force, ForceMode.Force);
+    }
+
+    // ==================================================
+    // INCLINAISON DU CORPS
+    // ==================================================
+    void ApplyLean(Vector3 headLocal)
+    {
+        Vector3 offset = headLocal - neutralHeadLocal;
+        offset.y = 0f;
+
+        float dist = offset.magnitude;
+        if (dist < leanDeadzone) return;
+
+        float strength = Mathf.Clamp01(
+            (dist - leanDeadzone) / (leanMaxDistance - leanDeadzone));
+
+        Vector3 worldDir = transform.TransformDirection(offset.normalized);
+        rb.AddForce(worldDir * leanForce * strength, ForceMode.Force);
+    }
+
+    // ==================================================
+    // PORTANCE (basée sur la vitesse horizontale)
+    // ==================================================
     void ApplyLift()
     {
-        if (isGrounded)
-            return;
+        if (isGrounded) return;
 
-        /*
-         * On mesure uniquement la vitesse dans
-         * la direction vers laquelle regarde l'oiseau.
-         */
-        float forwardSpeed =
-            Vector3.Dot(
-                rb.linearVelocity,
-                transform.forward
-            );
+        Vector3 v = rb.linearVelocity;
+        float horizontalSpeed = new Vector2(v.x, v.z).magnitude;
 
-        forwardSpeed = Mathf.Max(
-            0f,
-            forwardSpeed
-        );
+        float liftRatio = Mathf.Clamp01(horizontalSpeed / glideSpeed);
+        float weight = rb.mass * Physics.gravity.magnitude;
+        float lift = weight * glideLiftRatio * liftRatio * liftRatio;
 
-        /*
-         * 0 = pas de portance
-         * 1 = vitesse de plané suffisante
-         */
-        float liftRatio =
-            Mathf.Clamp01(
-                forwardSpeed / glideSpeed
-            );
-
-        /*
-         * Poids réel du Rigidbody.
-         * Avec Mass = 1 :
-         * environ 9.81 N.
-         */
-        float weight =
-            rb.mass
-            * Physics.gravity.magnitude;
-
-        /*
-         * La portance maximale en plané
-         * reste légèrement inférieure au poids.
-         *
-         * Donc sans battement :
-         * l'oiseau descend progressivement.
-         */
-        float lift =
-            weight
-            * glideLiftRatio
-            * liftRatio
-            * liftRatio;
-
-        rb.AddForce(
-            Vector3.up * lift,
-            ForceMode.Force
-        );
+        rb.AddForce(Vector3.up * lift, ForceMode.Force);
     }
-
-    // ==================================================
-    // TRAÎNÉE
-    // ==================================================
 
     void ApplyDrag()
     {
-        Vector3 velocity =
-            rb.linearVelocity;
+        Vector3 v = rb.linearVelocity;
+        if (v.sqrMagnitude < 0.01f) return;
 
-        // Presque immobile : rien à faire.
-        if (velocity.sqrMagnitude < 0.01f)
-            return;
-
-        /*
-         * La traînée augmente avec le carré
-         * de la vitesse.
-         */
-        Vector3 dragForce =
-            -velocity.normalized
-            * velocity.sqrMagnitude
-            * dragCoefficient;
-
-        rb.AddForce(
-            dragForce,
-            ForceMode.Force
-        );
+        rb.AddForce(-v.normalized * v.sqrMagnitude * dragCoefficient,
+                    ForceMode.Force);
     }
 
-    // ==================================================
-    // INPUT : DIRECTION
-    // ==================================================
-
-    public void OnFlightDirection(InputValue value)
+    void LimitHorizontalSpeed()
     {
-        flightDirection =
-            value.Get<Vector2>();
-    }
+        Vector3 v = rb.linearVelocity;
+        Vector3 h = new Vector3(v.x, 0f, v.z);
 
-    // ==================================================
-    // DIRECTION
-    // ==================================================
+        if (h.magnitude <= maxHorizontalSpeed) return;
 
-    void HandleFlightDirection()
-    {
-        if (isGrounded)
-            return;
-
-        float horizontal =
-            flightDirection.x;
-
-        float vertical =
-            flightDirection.y;
-
-        float yaw =
-            horizontal
-            * turnSpeed
-            * Time.fixedDeltaTime;
-
-        float pitch =
-            -vertical
-            * pitchSpeed
-            * Time.fixedDeltaTime;
-
-        Quaternion deltaRotation =
-            Quaternion.Euler(
-                pitch,
-                yaw,
-                0f
-            );
-
-        rb.MoveRotation(
-            rb.rotation * deltaRotation
-        );
-    }
-
-    // ==================================================
-    // LIMITATION DE LA VITESSE AVANT
-    // ==================================================
-
-    void LimitForwardSpeed()
-    {
-        Vector3 velocity =
-            rb.linearVelocity;
-
-        /*
-         * Vitesse uniquement selon l'axe avant.
-         */
-        float forwardSpeed =
-            Vector3.Dot(
-                velocity,
-                transform.forward
-            );
-
-        if (forwardSpeed <= maxForwardSpeed)
-            return;
-
-        /*
-         * On retire uniquement l'excès de vitesse
-         * avant.
-         *
-         * On ne touche donc pas directement
-         * à la vitesse verticale.
-         */
-        float excessSpeed =
-            forwardSpeed - maxForwardSpeed;
-
-        rb.linearVelocity =
-            velocity
-            - transform.forward * excessSpeed;
-    }
-
-    // ==================================================
-    // ANIMATION DES AILES
-    // ==================================================
-
-    void AnimateWings()
-    {
-        if (
-            leftWingPivot == null ||
-            rightWingPivot == null
-        )
-        {
-            return;
-        }
-
-        if (flapHeld)
-        {
-            /*
-             * Oscillation périodique :
-             * ailes haut / bas tant que Space
-             * est maintenu.
-             */
-            flapTimer +=
-                Time.deltaTime
-                * flapFrequency
-                * Mathf.PI
-                * 2f;
-
-            float angle =
-                Mathf.Sin(flapTimer)
-                * flapAngle;
-
-            leftWingPivot.localRotation =
-                Quaternion.Euler(
-                    0f,
-                    0f,
-                    angle
-                );
-
-            rightWingPivot.localRotation =
-                Quaternion.Euler(
-                    0f,
-                    0f,
-                    -angle
-                );
-        }
-        else
-        {
-            /*
-             * Sans battement :
-             * ailes déployées horizontalement
-             * pour le vol plané.
-             */
-            leftWingPivot.localRotation =
-                Quaternion.Lerp(
-                    leftWingPivot.localRotation,
-                    Quaternion.identity,
-                    5f * Time.deltaTime
-                );
-
-            rightWingPivot.localRotation =
-                Quaternion.Lerp(
-                    rightWingPivot.localRotation,
-                    Quaternion.identity,
-                    5f * Time.deltaTime
-                );
-        }
+        h = h.normalized * maxHorizontalSpeed;
+        rb.linearVelocity = new Vector3(h.x, v.y, h.z);
     }
 
     // ==================================================
     // SOL
     // ==================================================
-
-    void OnCollisionEnter(Collision collision)
-    {
-        if (
-            collision.gameObject.CompareTag("Ground")
-        )
-        {
-            isGrounded = true;
-        }
-    }
-
-    void OnCollisionStay(Collision collision)
-    {
-        if (
-            collision.gameObject.CompareTag("Ground")
-        )
-        {
-            isGrounded = true;
-        }
-    }
-
-    void OnCollisionExit(Collision collision)
-    {
-        if (
-            collision.gameObject.CompareTag("Ground")
-        )
-        {
-            isGrounded = false;
-        }
-    }
+    void OnCollisionEnter(Collision c) { if (c.gameObject.CompareTag("Ground")) isGrounded = true; }
+    void OnCollisionStay(Collision c)  { if (c.gameObject.CompareTag("Ground")) isGrounded = true; }
+    void OnCollisionExit(Collision c)  { if (c.gameObject.CompareTag("Ground")) isGrounded = false; }
 }

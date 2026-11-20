@@ -30,8 +30,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0.2, z: 1}
   m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 4602995450837384033}
+  m_Children: []
   m_Father: {fileID: 1325678726748431930}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9183868461957928196
@@ -122,6 +121,7 @@ Transform:
   m_Children:
   - {fileID: 4953826070070208523}
   - {fileID: 410864279636755115}
+  - {fileID: 4602995450837384033}
   - {fileID: 5312098258865520354}
   - {fileID: 6195407047113444004}
   - {fileID: 9078789738022067351}
@@ -365,12 +365,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4913096827462810748}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.05, z: 0.45}
-  m_LocalScale: {x: 0.2, y: 0.15, z: 0.4}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.17000002, z: 1.27}
+  m_LocalScale: {x: 0.120000005, y: 0.09, z: 0.24000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 410864279636755115}
+  m_Father: {fileID: 1325678726748431930}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4604521354581669722
 MeshFilter:
@@ -617,19 +617,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d7bbf3e4da5cc64c8f617e333a4717d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlightController
-  leftWingPivot: {fileID: 5312098258865520354}
-  rightWingPivot: {fileID: 6195407047113444004}
-  flapForwardForce: 10
+  head: {fileID: 0}
+  leftHand: {fileID: 0}
+  rightHand: {fileID: 0}
+  bodyCollider: {fileID: 0}
+  minFlapSpeed: 0.8
   flapUpForce: 6
-  takeoffUpForce: 14
+  takeoffMultiplier: 1.5
+  armsSpreadMin: 0.35
+  symmetryTolerance: 0.5
+  flapSmoothing: 10
+  leanDeadzone: 0.08
+  leanMaxDistance: 0.3
+  leanForce: 12
   glideLiftRatio: 0.85
   glideSpeed: 8
   dragCoefficient: 0.08
-  maxForwardSpeed: 12
-  turnSpeed: 50
-  pitchSpeed: 35
-  flapFrequency: 4
-  flapAngle: 45
+  maxHorizontalSpeed: 12
 --- !u!114 &2562090213801695592
 MonoBehaviour:
   m_ObjectHideFlags: 0
