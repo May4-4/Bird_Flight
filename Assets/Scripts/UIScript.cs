@@ -18,6 +18,7 @@ public class UIScore : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       m_TextMeshPro.text = "Score : " + GM.getScore();
+       m_TextMeshPro.text = "Dans votre bec : " + GM.getScore();
+    
     }
 }
