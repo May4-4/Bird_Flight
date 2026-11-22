@@ -12,7 +12,7 @@ public class VRFlightController : MonoBehaviour
     [Header("Battement")]
     public float minFlapSpeed = 0.8f;      // m/s vers le bas, par main
     public float flapUpForce = 25f;
-    public float takeoffMultiplier = 1.5f; // bonus au sol
+    public float takeoffMultiplier = 1.5f; // bonus au sol pour pas qu'on ait du mal à s'nevoler
     public float armsSpreadMin = 0.35f;    // écart horizontal mains/tête (m)
     [Range(0f, 1f)] public float symmetryTolerance = 0.5f;
     public float flapSmoothing = 10f;
@@ -66,10 +66,10 @@ public class VRFlightController : MonoBehaviour
 
         if (isGrounded)
         {
-            // Marche physique : on recalibre le neutre en continu
+            // Marche physique 
             neutralHeadLocal = headLocal;
 
-            // Le collider suit la tête dans la salle
+            // Le collider suit la tête 
             if (bodyCollider != null)
             {
                 Vector3 c = bodyCollider.center;

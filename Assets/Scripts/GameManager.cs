@@ -1,9 +1,13 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+
+
 public class GameManager : MonoBehaviour
 {
-
+    public AudioSource verSound;
+    public AudioSource babyBirdSound;
+    public AudioSource victorySound;
     private int score;
     private int toBabyBirds;
 
@@ -14,17 +18,23 @@ public class GameManager : MonoBehaviour
     }
 
     public void scoreModify(int value)
-        { score += value; }
+        { score += value;
+        if (value>0){verSound.Play();} }
 
     public int getScore()
     { return score; }
 
     public void feedBabyBirds(int value){
+        score -= value;
         toBabyBirds += value;
-                if (toBabyBirds == 3){
+        if (value>0){babyBirdSound.Play();}
+        if (toBabyBirds == 3){
+            Debug.Log("VICTOIRE");
+            victorySound.Play();
             Invoke("LoadScene", 5f);
 
         }
+        
 
     }
 

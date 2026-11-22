@@ -11,14 +11,15 @@ public class NestGiver : MonoBehaviour
         GM = FindAnyObjectByType<GameManager>();
     }
 
-    private void OnTriggerEnter(Collider other)
-    //on pourra modifier la condition à GM.getScore()>1 si on fait le raycasting
-    {   if (GM.getScore()==3){
+//on trigger stay au lieu de enter comme ça quand on est dans la zonne ça reste.
+    private void OnTriggerStay(Collider other)
+    
+    {   if (GM.getScore()>0){
 
         if(other.gameObject.CompareTag("BabyBird"))
         {
             if (other.GetComponent<AnimateBabyBirds>().wantFood){
-            GM.feedBabyBirds(-1);
+            GM.feedBabyBirds(1);
             other.GetComponent<AnimateBabyBirds>().wantFood = false;
             }
             
