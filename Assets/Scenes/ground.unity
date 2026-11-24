@@ -2268,6 +2268,7 @@ MonoBehaviour:
   count: 100
   notAround:
   - {fileID: 793215974}
+  - {fileID: 0}
   distance: 10
   maxAttempts: 30
 --- !u!1 &1262010108
