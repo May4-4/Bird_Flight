@@ -852,7 +852,7 @@ MonoBehaviour:
   turnSpeed: 50
   minBendTreshold: 0.15
   maxBendTreshold: 0.8
-  maxPoussee: 0
+  maxPoussee: 5
 --- !u!1 &300061976 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6239703846739510096, guid: 9f93a8089a07c6b3986362994717f030, type: 3}

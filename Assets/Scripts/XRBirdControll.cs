@@ -1,3 +1,5 @@
+using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class XRBirdController : MonoBehaviour
@@ -53,7 +55,7 @@ private float isTurning;
     private Rigidbody rb;
     private bool isGrounded;
 
-    public float maxPoussee;
+    public float maxPoussee=5;
     private float PousseeTimer;  
 
 
@@ -75,33 +77,46 @@ private float isTurning;
         float leftY  = transform.InverseTransformPoint(leftHand.position).y;
         float rightY = transform.InverseTransformPoint(rightHand.position).y;
 
+        
+
         float leftVy  = (leftY  - lastLeftY)  / Time.deltaTime;
         float rightVy = (rightY - lastRightY) / Time.deltaTime;
         lastLeftY  = leftY;
         lastRightY = rightY;
+        Debug.Log("Vitesses " + leftVy + ", " + rightVy);
 
         bool bothGoingDown = leftVy < -descenteThreshold && rightVy < -descenteThreshold;
+        Debug.Log("les deux ailes sont en train de descendre ?" +bothGoingDown);
+        Debug.Log("On était pas encore en train de descendre ?" + !armsGoingDown);
 
         //si les deux sont en train de descendre et qu'on était pas encore en train de descendre:
          if (bothGoingDown && !armsGoingDown)
         {
             // Début de la descente
+            Debug.Log("Début de la descente");
             armsGoingDown = true;
             startLeftY  = leftY;
             startRightY = rightY;
         }else if (!bothGoingDown && armsGoingDown)
         {
             // Fin de la descente : on juge le battement
+            Debug.Log("Fin de la descente");
             armsGoingDown = false;
 
             float amplitude = Mathf.Min(startLeftY - leftY, startRightY - rightY);
             float ratio = amplitude / armLength;   // amplitude relative à la taille
+            Debug.Log("Ratio" + ratio);
 
             if (ratio >= minFlapRatio)
             {
                 //on calcule la force du battement entre le min et max possible 
                 FlapStrength = Mathf.InverseLerp(minFlapRatio, fullFlapRatio, ratio);
+                Debug.Log("PousseeTimer avant mise à jour : " + PousseeTimer);
+                Debug.Log("Flapstrength avant mise à jour : " + FlapStrength);
                 PousseeTimer = Mathf.Min(PousseeTimer + FlapStrength, maxPoussee);
+                Debug.Log("FlapStrength"+FlapStrength);
+                Debug.Log("PousseeTimer"+ PousseeTimer);
+
                 
             }
         }
@@ -121,8 +136,8 @@ private float isTurning;
 {
     if (PousseeTimer > 0f)
     {
+        Debug.Log("j'apply la poussée");
         ApplyPoussee();
-        // Se vide en thrustDuration pour une réserve de 1
         PousseeTimer = Mathf.MoveTowards(PousseeTimer, 0f, Time.fixedDeltaTime / PousseeDuration);
         ApplyDrag();
         ApplyLift();
