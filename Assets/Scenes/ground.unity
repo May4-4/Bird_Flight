@@ -687,10 +687,10 @@ GameObject:
   - component: {fileID: 283622277}
   - component: {fileID: 283622276}
   - component: {fileID: 283622275}
-  - component: {fileID: 283622274}
   - component: {fileID: 283622279}
   - component: {fileID: 283622280}
   - component: {fileID: 283622281}
+  - component: {fileID: 283622282}
   m_Layer: 0
   m_Name: XR Origin (VR)
   m_TagString: Untagged
@@ -698,35 +698,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &283622274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 283622273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d7bbf3e4da5cc64c8f617e333a4717d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FlightController
-  head: {fileID: 122168053}
-  leftHand: {fileID: 726271876}
-  rightHand: {fileID: 1180111188}
-  bodyCollider: {fileID: 283622279}
-  minFlapSpeed: 0.8
-  flapUpForce: 6
-  takeoffMultiplier: 1.5
-  armsSpreadMin: 0.35
-  symmetryTolerance: 0.5
-  flapSmoothing: 10
-  leanDeadzone: 0.08
-  leanMaxDistance: 0.3
-  leanForce: 12
-  glideLiftRatio: 0.85
-  glideSpeed: 8
-  dragCoefficient: 0.08
-  maxHorizontalSpeed: 12
 --- !u!54 &283622275
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -852,6 +823,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f449439de7740b24bea974180b9714d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NestGiver
+--- !u!114 &283622282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 283622273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0aed9965ac0ea739a118e5b5b109187, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::XRBirdController
+  head: {fileID: 122168053}
+  leftHand: {fileID: 726271876}
+  rightHand: {fileID: 1180111188}
+  descenteThreshold: 0.2
+  minFlapRatio: 0.3
+  fullFlapRatio: 1
+  PousseeDuration: 0.3
+  takeoffUpForce: 30
+  flapUpForce: 20
+  flapForwardForce: 5
+  glideLiftRatio: 0.85
+  glideSpeed: 8
+  dragCoefficient: 0.08
+  maxForwardSpeed: 12
+  turnSpeed: 50
+  minBendTreshold: 0.15
+  maxBendTreshold: 0.8
+  maxPoussee: 0
 --- !u!1 &300061976 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6239703846739510096, guid: 9f93a8089a07c6b3986362994717f030, type: 3}

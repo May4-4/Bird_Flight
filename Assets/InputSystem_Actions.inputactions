@@ -878,11 +878,33 @@
                 },
                 {
                     "name": "",
+                    "id": "84a0a18a-37be-4023-9db2-dff52fc4e0bc",
+                    "path": "<ViveController>{RightHand}/trackpad",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";XR",
+                    "action": "Navigate",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "9e92bb26-7e3b-4ec4-b06b-3c8f8e498ddc",
-                    "path": "*/{Submit}",
+                    "path": "<ViveController>{RightHand}/{TriggerButton}",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse;Gamepad;Touch;Joystick;XR",
+                    "action": "Submit",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c9c8d6fa-d28a-45b0-8d6f-c742bf8de2da",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Submit",
                     "isComposite": false,
                     "isPartOfComposite": false
