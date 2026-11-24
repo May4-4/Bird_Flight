@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
 
     public void scoreModify(int value)
         { score += value;
-        if (value>0){verSound.Play();} }
+        if (value>0 && verSound != null){verSound.Play();} }
 
     public int getScore()
     { return score; }
@@ -27,10 +27,10 @@ public class GameManager : MonoBehaviour
     public void feedBabyBirds(int value){
         score -= value;
         toBabyBirds += value;
-        if (value>0){babyBirdSound.Play();}
+        if (value>0 && babyBirdSound != null){babyBirdSound.Play();}
         if (toBabyBirds == 3){
             Debug.Log("VICTOIRE");
-            victorySound.Play();
+            if (victorySound != null) victorySound.Play();
             Invoke("LoadScene", 5f);
 
         }
