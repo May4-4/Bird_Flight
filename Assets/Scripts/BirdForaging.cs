@@ -1,22 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 // Boucle de nourrissage : attraper les vers avec le bec et les donner aux oisillons.
 //  - Visée : un rayon (sphere cast) part de l'œil dans l'axe du regard, donc du bec.
 //    PC : la souris oriente le regard. VR : c'est le casque.
 //  - Coup de bec : Attack (clic, gâchette XR) ou Interact (E). La tête plonge et la cible est
 //    vérifiée à nouveau au bout du mouvement (un ver qui se tortille peut s'échapper).
-//  - Attraper : le ver est figé et tenu au bout du bec (visible à la première personne).
+//  - Attraper : le ver est figé et tenu au bout du bec (BeakTip, visible à la première personne).
 //  - Nourrir : un coup de bec vers un oisillon affamé lui donne le ver.
-// Ajoute aussi la recherche de vers (WormLocator) et la minimap du nid (NestMiniMap).
-[RequireComponent(typeof(BirdFirstPersonController))]
+// Références, sons et HUD (Canvas "HUD" de la scène) sont assignés dans l'Inspector.
+[RequireComponent(typeof(BirdFirstPersonController), typeof(AudioSource))]
 public class BirdForaging : MonoBehaviour
 {
     public int maxCarried = 3;
     public float beakReach = 2.2f;          // portée du bec depuis l'œil (cou + bec)
     public float carriedWormScale = 0.1f;   // les vers de la scène sont très grands
+
+    public Camera eye;
+    public Transform beakTip;
+    public GameManager gm;
+    public InputActionReference attackAct, interactAct;
+    public AudioClip catchClip, feedClip, missClip;
+    public Image reticle;                   // vert = action possible, jaune = impossible
+    public TMP_Text hint, score;
 
     const float BeakCastRadius = 0.25f, PeckDuration = 0.22f, PeckCooldown = 0.35f, FeedTransferTime = 0.35f;
 
@@ -24,47 +34,19 @@ public class BirdForaging : MonoBehaviour
 
     BirdFirstPersonController bird;
     BirdBodyAnimator body;
-    GameManager gm;
-    Camera eye;
-    Transform beakTip, targetWorm;
+    AudioSource sfx;
+    Transform targetWorm;
     AnimateBabyBirds targetChick;
     Target target;
-    InputAction attackAct, interactAct;
-    AudioClip catchClip, feedClip, missClip;
     readonly List<GameObject> carried = new List<GameObject>();
     readonly RaycastHit[] hits = new RaycastHit[16];
     float peckTimer = -1f, cooldown;
 
-    void Awake()
+    void Start()
     {
         bird = GetComponent<BirdFirstPersonController>();
         body = GetComponent<BirdBodyAnimator>();
-        eye = GetComponentInChildren<Camera>();
-        if (GetComponent<WormLocator>() == null) gameObject.AddComponent<WormLocator>();
-        if (GetComponent<NestMiniMap>() == null) gameObject.AddComponent<NestMiniMap>();
-
-        // Petits sons générés par le code (pas besoin de fichiers audio)
-        catchClip = ProceduralAudio.Squelch(0.16f);
-        feedClip = ProceduralAudio.Chirp(2600f, 1800f, 0.09f, 3, 0.03f);
-        missClip = ProceduralAudio.Click(0.05f);
-    }
-
-    void Start()
-    {
-        gm = FindAnyObjectByType<GameManager>();
-        attackAct = InputSystem.actions.FindAction("Player/Attack");
-        interactAct = InputSystem.actions.FindAction("Player/Interact");
-
-        // Point d'accroche au bout du bec. Créé dans Start, une fois le bec rattaché à la tête (Awake de BirdBodyAnimator).
-        foreach (var t in GetComponentsInChildren<Transform>(true))
-            if (t.name == "Beak")
-            {
-                beakTip = new GameObject("BeakTip").transform;
-                beakTip.SetParent(t.parent, false);
-                beakTip.position = t.TransformPoint(new Vector3(0f, 0f, 0.5f));
-                beakTip.rotation = t.rotation;
-                break;
-            }
+        sfx = GetComponent<AudioSource>();
     }
 
     void Update()
@@ -72,6 +54,7 @@ public class BirdForaging : MonoBehaviour
         float dt = Time.deltaTime;
         cooldown -= dt;
         UpdateTarget();
+        UpdateHud();
 
         if (PeckPressed() && cooldown <= 0f && peckTimer < 0f)
         {
@@ -94,8 +77,8 @@ public class BirdForaging : MonoBehaviour
     {
         // Un clic qui sert seulement à recapturer la souris ne doit pas donner de coup de bec
         bool mouseFree = Cursor.lockState != CursorLockMode.Locked;
-        foreach (var a in new[] { attackAct, interactAct })
-            if (a != null && a.WasPressedThisFrame() && !(mouseFree && a.activeControl?.device is Mouse)) return true;
+        foreach (var a in new[] { attackAct.action, interactAct.action })
+            if (a.WasPressedThisFrame() && !(mouseFree && a.activeControl?.device is Mouse)) return true;
         return false;
     }
 
@@ -126,7 +109,7 @@ public class BirdForaging : MonoBehaviour
         UpdateTarget();   // le ver a pu s'échapper pendant le mouvement
         if (CanAct() && target == Target.Worm) Catch(targetWorm);
         else if (CanAct() && target == Target.HungryChick) Feed(targetChick);
-        else Play(missClip, eye.transform.position, 0.5f, 0f);   // coup dans le vide ou impossible : claquement de bec
+        else sfx.PlayOneShot(missClip, 0.5f);   // coup dans le vide ou impossible : claquement de bec
     }
 
     void Catch(Transform worm)
@@ -146,8 +129,8 @@ public class BirdForaging : MonoBehaviour
         worm.localPosition = -centerLocal * carriedWormScale + new Vector3(0f, -0.04f, -0.04f * carried.Count);
 
         carried.Add(worm.gameObject);
-        gm?.scoreModify(1);
-        Play(catchClip, beakTip.position, 1f, 0f);
+        gm.scoreModify(1);
+        sfx.PlayOneShot(catchClip);
     }
 
     void Feed(AnimateBabyBirds chick)
@@ -155,9 +138,9 @@ public class BirdForaging : MonoBehaviour
         GameObject worm = carried[carried.Count - 1];
         carried.RemoveAt(carried.Count - 1);
         chick.wantFood = false;
-        gm?.feedBabyBirds(1);
-        StartCoroutine(TransferWorm(worm.transform, chick.beak != null ? chick.beak : chick.transform));
-        Play(feedClip, chick.transform.position, 1f, 0.5f);
+        gm.feedBabyBirds(1);
+        StartCoroutine(TransferWorm(worm.transform, chick.beak));
+        sfx.PlayOneShot(feedClip);
     }
 
     // Le ver glisse du bec du parent jusque dans le bec ouvert de l'oisillon, puis disparaît
@@ -187,99 +170,15 @@ public class BirdForaging : MonoBehaviour
         return t != null && !carried.Contains(t.gameObject) ? t : null;
     }
 
-    static void Play(AudioClip clip, Vector3 pos, float volume, float spatial)
+    // Point de visée avec un mot d'aide, et une ligne de score
+    void UpdateHud()
     {
-        var go = new GameObject("Son");
-        go.transform.position = pos;
-        var src = go.AddComponent<AudioSource>();
-        src.clip = clip;
-        src.volume = volume;
-        src.spatialBlend = spatial;
-        src.minDistance = 5f;
-        src.Play();
-        Destroy(go, clip.length + 0.1f);
-    }
+        reticle.color = target == Target.None ? new Color(1f, 1f, 1f, 0.6f) : CanAct() ? Color.green : Color.yellow;
+        reticle.rectTransform.sizeDelta = Vector2.one * (target == Target.None ? 4f : 8f);
 
-    // Interface minimale : point de visée (vert = action possible, jaune = impossible) avec un mot d'aide,
-    // et une ligne de score
-    void OnGUI()
-    {
-        float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
-        GUI.color = target == Target.None ? new Color(1f, 1f, 1f, 0.6f) : CanAct() ? Color.green : Color.yellow;
-        float size = target == Target.None ? 4f : 8f;
-        GUI.DrawTexture(new Rect(cx - size * 0.5f, cy - size * 0.5f, size, size), Texture2D.whiteTexture);
-
-        string hint = null;
-        if (target == Target.Worm) hint = CanAct() ? "Attraper" : bird.IsAirborne ? "Posez-vous" : "Bec plein";
-        else if (target == Target.HungryChick) hint = CanAct() ? "Nourrir" : "Rien dans le bec";
-        else if (target == Target.FedChick) hint = "Déjà nourri";
-        if (hint != null) GUI.Label(new Rect(cx - 100f, cy + 10f, 200f, 22f), hint, Centered());
-
-        GUI.color = Color.white;
-        GUI.Label(new Rect(cx - 200f, Screen.height - 40f, 400f, 22f),
-                  $"Bec : {carried.Count}/{maxCarried}   Oisillons nourris : {(gm != null ? gm.getBabyBirdsScore() : 0)}/3", Centered());
-    }
-
-    static GUIStyle centered;
-    static GUIStyle Centered()
-    {
-        return centered ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-    }
-}
-
-// Petits effets sonores générés par le code
-public static class ProceduralAudio
-{
-    const int Rate = 44100;
-
-    // "Pips" : sinusoïdes glissant de f0 à f1
-    public static AudioClip Chirp(float f0, float f1, float dur, int count, float gap)
-    {
-        int per = Mathf.CeilToInt(dur * Rate), gapN = Mathf.CeilToInt(gap * Rate);
-        var data = new float[count * per + (count - 1) * gapN];
-        for (int c = 0, o = 0; c < count; c++, o += per + gapN)
-        {
-            double phase = 0;
-            for (int i = 0; i < per; i++)
-            {
-                float t = (float)i / per;
-                phase += 2.0 * Mathf.PI * Mathf.Lerp(f0, f1, t) / Rate;
-                data[o + i] = 0.5f * Mathf.Sin(Mathf.PI * t) * (float)System.Math.Sin(phase);
-            }
-        }
-        return Make("Chirp", data);
-    }
-
-    // Bruit sourd et mouillé : bruit filtré sur une note grave descendante
-    public static AudioClip Squelch(float dur)
-    {
-        var data = new float[Mathf.CeilToInt(dur * Rate)];
-        var rng = new System.Random(7);
-        float lp = 0f; double phase = 0;
-        for (int i = 0; i < data.Length; i++)
-        {
-            float t = (float)i / data.Length;
-            lp += 0.08f * ((float)(rng.NextDouble() * 2 - 1) - lp);
-            phase += 2.0 * Mathf.PI * Mathf.Lerp(320f, 90f, t) / Rate;
-            data[i] = Mathf.Pow(1f - t, 2f) * Mathf.Min(1f, t * 40f) * (2.1f * lp + 0.4f * (float)System.Math.Sin(phase));
-        }
-        return Make("Squelch", data);
-    }
-
-    // Court claquement de bec
-    public static AudioClip Click(float dur)
-    {
-        var data = new float[Mathf.CeilToInt(dur * Rate)];
-        var rng = new System.Random(3);
-        for (int i = 0; i < data.Length; i++)
-            data[i] = Mathf.Exp(-12f * i / data.Length) * ((float)(rng.NextDouble() * 2 - 1) * 0.5f + 0.5f * Mathf.Sin(i * 2f * Mathf.PI * 2200f / Rate));
-        return Make("Click", data);
-    }
-
-    static AudioClip Make(string name, float[] data)
-    {
-        var clip = AudioClip.Create(name, data.Length, 1, Rate, false);
-        clip.SetData(data, 0);
-        return clip;
+        hint.text = target == Target.Worm ? (CanAct() ? "Attraper" : bird.IsAirborne ? "Posez-vous" : "Bec plein")
+                  : target == Target.HungryChick ? (CanAct() ? "Nourrir" : "Rien dans le bec")
+                  : target == Target.FedChick ? "Déjà nourri" : "";
+        score.text = $"Bec : {carried.Count}/{maxCarried}   Oisillons nourris : {gm.getBabyBirdsScore()}/3";
     }
 }

@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour
     public AudioSource verSound;
     public AudioSource babyBirdSound;
     public AudioSource victorySound;
+    public GameObject menuFin;   // optionnel : menu de fin dans la scène ; vide = chargement de la scène "fin"
     private int score;
     private int toBabyBirds;
 
@@ -43,7 +44,8 @@ public class GameManager : MonoBehaviour
 
     public void LoadScene()
     {
-        SceneManager.LoadScene(2);
-    
+        if (menuFin != null) menuFin.SetActive(true);
+        else SceneManager.LoadScene(2);
+
     }
 }

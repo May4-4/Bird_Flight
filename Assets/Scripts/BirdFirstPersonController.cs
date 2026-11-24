@@ -11,10 +11,15 @@ using UnityEngine.InputSystem;
 //   en vol : Jump = battre des ailes, Move / Look = piquer, cabrer, s'incliner, Sprint = replier les ailes
 //   pour se poser : arrêter de battre et planer vers une surface, l'arrondi est automatique
 //   Échap libère la souris, un clic la capture à nouveau.
+// Rigidbody (réglé dans l'Inspector) : gravité, rotation bloquée (pilotée par le script),
+// Linear Damping 0 (traînée calculée par l'aérodynamique), Interpolate, Continuous Dynamic.
 [RequireComponent(typeof(Rigidbody))]
 public class BirdFirstPersonController : MonoBehaviour
 {
     public enum BirdState { Walking, Crouching, Takeoff, Flying, Landing }
+
+    // Actions du projet (InputSystem_Actions, map Player) : Move, Look, Jump, Sprint
+    public InputActionReference moveAct, lookAct, flapAct, tuckAct;
 
     // Pattes : ressort amorti entre la hanche et le sol
     public float legLength = 0.75f;
@@ -86,7 +91,6 @@ public class BirdFirstPersonController : MonoBehaviour
     public event Action<float> Landed;               // vitesse d'impact (m/s)
 
     Rigidbody rb;
-    InputAction moveAct, lookAct, flapAct, tuckAct;
     Vector2 moveInput, lookInput;
     bool jumpHeld, jumpPressed, jumpReleased, tuckHeld, mouseRolling, mousePitching;
     float yaw, pitch, roll, headPitch;
@@ -100,23 +104,12 @@ public class BirdFirstPersonController : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity = true;
-        rb.freezeRotation = true;              // l'orientation est pilotée par le script
-        rb.linearDamping = 0f;                 // la traînée est calculée par l'aérodynamique
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         yaw = transform.eulerAngles.y;
         legCurrent = legLength;
     }
 
     void Start()
     {
-        // Actions globales du projet (Assets/InputSystem_Actions) : clavier, souris, manette, XR
-        moveAct = InputSystem.actions.FindAction("Player/Move");
-        lookAct = InputSystem.actions.FindAction("Player/Look");
-        flapAct = InputSystem.actions.FindAction("Player/Jump");
-        tuckAct = InputSystem.actions.FindAction("Player/Sprint");
-        InputSystem.actions.Enable();
         SetCursorLocked(true);
     }
 
@@ -130,16 +123,16 @@ public class BirdFirstPersonController : MonoBehaviour
 
     void ReadInput()
     {
-        bool jump = flapAct.IsPressed();
+        bool jump = flapAct.action.IsPressed();
         if (jumpHeld && !jump) jumpReleased = true;     // mémorisé jusqu'au prochain FixedUpdate
         if (!jumpHeld && jump) jumpPressed = true;
         jumpHeld = jump;
-        tuckHeld = tuckAct.IsPressed();                  // même touche : sautiller au sol, replier les ailes en vol
-        moveInput = Vector2.ClampMagnitude(moveAct.ReadValue<Vector2>(), 1f);
+        tuckHeld = tuckAct.action.IsPressed();           // même touche : sautiller au sol, replier les ailes en vol
+        moveInput = Vector2.ClampMagnitude(moveAct.action.ReadValue<Vector2>(), 1f);
 
         // Regard : un stick donne une vitesse, la souris un déplacement en pixels
-        Vector2 l = lookAct.ReadValue<Vector2>();
-        var device = lookAct.activeControl != null ? lookAct.activeControl.device : null;
+        Vector2 l = lookAct.action.ReadValue<Vector2>();
+        var device = lookAct.action.activeControl?.device;
         if (device is Gamepad || device is Joystick) lookInput = l * GamepadLookSpeed * Time.deltaTime;
         else lookInput = Cursor.lockState == CursorLockMode.Locked ? l * mouseSensitivity : Vector2.zero;
 

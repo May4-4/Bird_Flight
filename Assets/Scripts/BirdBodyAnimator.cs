@@ -1,16 +1,17 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 
 // Partie visuelle de l'oiseau à la première personne :
 //  - la tête (les yeux = la caméra) reste stable quand le corps s'incline, comme chez les oiseaux ;
 //  - en marchant, un hochement de tête par pas (la tête reste fixe puis avance, comme un pigeon) ;
 //  - les ailes : repliées au sol, levées en s'accroupissant, battement complet en vol, ouvertes en plané ;
 //  - seul le bec est visible pour la caméra, le reste du corps ne fait qu'une ombre.
+// Réglé dans la scène : la tête, le bec et la caméra (les yeux) sont enfants de HeadPivot ;
+// les renderers du corps sont en "Shadows Only", seul le bec est rendu normalement.
 [RequireComponent(typeof(BirdFirstPersonController))]
 public class BirdBodyAnimator : MonoBehaviour
 {
-    // Position de l'œil par rapport au pivot de la tête : plus haut = bec plus discret
-    public Vector3 eyeOffset = new Vector3(0f, 0.2f, 0.16f);
+    public Transform headPivot, leftWing, rightWing;
+    public Camera eye;
     // 0 = caméra parfaitement stable (conseillé en VR), 1 = hochement de tête naturel complet
     public float headBobStrength = 0.4f;
 
@@ -24,8 +25,6 @@ public class BirdBodyAnimator : MonoBehaviour
     const float PeckReach = 0.2f, PeckDip = 25f;
 
     BirdFirstPersonController bird;
-    Transform headPivot, leftWing, rightWing;
-    Camera eye;
     Vector3 headBasePos, gaitOffset;
     Quaternion headBaseRot, leftBaseRot, rightBaseRot;
     float stepPhase, gaitBlend, wingElevation = FoldedElevation, wingSweep = FoldedSweep, touchdownDip;
@@ -34,32 +33,14 @@ public class BirdBodyAnimator : MonoBehaviour
     void Awake()
     {
         bird = GetComponent<BirdFirstPersonController>();
-        headPivot = FindChild("HeadPivot");
-        leftWing = FindChild("LeftWingPivot");
-        rightWing = FindChild("RightWingPivot");
-        eye = GetComponentInChildren<Camera>();
-
         headBasePos = headPivot.localPosition;
         headBaseRot = headPivot.localRotation;
         leftBaseRot = leftWing.localRotation;
         rightBaseRot = rightWing.localRotation;
-        if (eye != null) eye.transform.localPosition = eyeOffset;
-
-        // La tête et le bec doivent suivre les yeux. Fait au lancement, car une instance
-        // de prefab ne peut pas être réorganisée dans la scène.
-        foreach (var name in new[] { "Head", "Beak" })
-        {
-            var t = FindChild(name);
-            if (t != null && !t.IsChildOf(headPivot)) t.SetParent(headPivot, true);
-        }
-
-        // Seul le bec est rendu ; le reste du corps projette seulement son ombre
-        foreach (var r in GetComponentsInChildren<Renderer>(true))
-            r.shadowCastingMode = r.name.Contains("Beak") ? ShadowCastingMode.On : ShadowCastingMode.ShadowsOnly;
     }
 
-    void OnEnable() { GetComponent<BirdFirstPersonController>().Landed += OnLanded; }
-    void OnDisable() { GetComponent<BirdFirstPersonController>().Landed -= OnLanded; }
+    void OnEnable() { bird.Landed += OnLanded; }
+    void OnDisable() { bird.Landed -= OnLanded; }
 
     // À l'impact, la tête s'enfonce avec les pattes qui amortissent
     void OnLanded(float impactSpeed) { touchdownDip = Mathf.Min(MaxTouchdownDip, impactSpeed * TouchdownDipPerMps); }
@@ -78,8 +59,7 @@ public class BirdBodyAnimator : MonoBehaviour
         AnimateWings(dt);
 
         // Le champ de vision s'élargit avec la vitesse
-        if (eye != null)
-            eye.fieldOfView = Mathf.Lerp(eye.fieldOfView, BaseFov + MaxFovBoost * Mathf.Clamp01(bird.Airspeed / FovBoostSpeed), 1f - Mathf.Exp(-3f * dt));
+        eye.fieldOfView = Mathf.Lerp(eye.fieldOfView, BaseFov + MaxFovBoost * Mathf.Clamp01(bird.Airspeed / FovBoostSpeed), 1f - Mathf.Exp(-3f * dt));
     }
 
     void AnimateHead(float dt)
@@ -186,12 +166,5 @@ public class BirdBodyAnimator : MonoBehaviour
     {
         leftWing.localRotation = leftBaseRot * Quaternion.Euler(0f, -wingSweep, -wingElevation);
         rightWing.localRotation = rightBaseRot * Quaternion.Euler(0f, wingSweep, wingElevation);
-    }
-
-    Transform FindChild(string n)
-    {
-        foreach (var t in GetComponentsInChildren<Transform>(true))
-            if (t.name == n) return t;
-        return null;
     }
 }

@@ -1,17 +1,30 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-// Menu de début affiché par-dessus la scène : le jeu est en pause jusqu'au clic sur Play.
-// À placer sur le Canvas du menu ; les boutons appellent Play() et Quit().
+// Menu affiché par-dessus la scène (début ou fin) : le jeu est en pause tant qu'il est visible.
+// À placer sur le Canvas du menu. Menu de début : Canvas actif dans la scène. Menu de fin : Canvas
+// désactivé, que GameManager active à la victoire. Les boutons appellent Play(), Replay() ou Quit().
 public class StartMenu : MonoBehaviour
 {
-    void Awake()
+    // Scripts désactivés tant que le menu est ouvert (l'oiseau ne réagit pas et ne capture pas la souris)
+    public Behaviour[] pausedWhileOpen;
+
+    void OnEnable()
     {
-        Show(true);
+        Pause(true);
     }
 
     public void Play()
     {
-        Show(false);
+        Pause(false);
+        gameObject.SetActive(false);
+    }
+
+    // Recommence la partie (la scène doit être dans File > Build Profiles > Scene List)
+    public void Replay()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(gameObject.scene.name);
     }
 
     public void Quit()
@@ -19,17 +32,10 @@ public class StartMenu : MonoBehaviour
         Application.Quit();
     }
 
-    void Show(bool open)
+    void Pause(bool open)
     {
-        gameObject.SetActive(open);
         Time.timeScale = open ? 0f : 1f;
-
-        // L'oiseau ne réagit pas (et ne capture pas la souris) tant que le menu est ouvert
-        var bird = FindAnyObjectByType<BirdFirstPersonController>(FindObjectsInactive.Include);
-        if (bird != null) bird.enabled = !open;
-        var foraging = FindAnyObjectByType<BirdForaging>(FindObjectsInactive.Include);
-        if (foraging != null) foraging.enabled = !open;
-
+        foreach (var b in pausedWhileOpen) b.enabled = !open;
         Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = open;
     }
