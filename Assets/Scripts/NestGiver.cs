@@ -11,6 +11,12 @@ public class NestGiver : MonoBehaviour
         GM = FindAnyObjectByType<GameManager>();
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("BabyBird"))
+            Debug.Log("[Nid] " + other.name + " touché, affamé=" + other.GetComponent<AnimateBabyBirds>().wantFood + ", vers=" + GM.getScore());
+    }
+
 //on trigger stay au lieu de enter comme ça quand on est dans la zonne ça reste.
     private void OnTriggerStay(Collider other)
     

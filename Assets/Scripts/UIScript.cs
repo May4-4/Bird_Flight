@@ -10,7 +10,7 @@ public class UIScore : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // On r�cup�re le component "TextMeshPro - Text (UI)"
+        // On récupère le component "TextMeshPro - Text (UI)"
         m_TextMeshPro = GetComponent<TMP_Text>();
         GM = FindAnyObjectByType<GameManager>();
     }
@@ -18,7 +18,7 @@ public class UIScore : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       m_TextMeshPro.text = "Dans votre bec : " + GM.getScore();
+       m_TextMeshPro.text = "Dans le bec : " + GM.getScore() + "/" + GameManager.maxVers;
     
     }
 }

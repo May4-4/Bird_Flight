@@ -1,3 +1,4 @@
+// Ancienne minimap, remplacée par NestMiniMap.cs
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;

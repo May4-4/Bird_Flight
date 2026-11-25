@@ -9,7 +9,7 @@ public class AnimateBabyBirds : MonoBehaviour
     public Transform rightWingPivot;
     private float flapTimer = 0f;
     private GameManager GM;
-    private AudioSource audio;
+    private new AudioSource audio;
 
     
 
@@ -66,9 +66,6 @@ public class AnimateBabyBirds : MonoBehaviour
                 );
         }
     void Sound(){
-         Debug.Log(
-           "play sound"
-        );
         audio.Play();
 
     }

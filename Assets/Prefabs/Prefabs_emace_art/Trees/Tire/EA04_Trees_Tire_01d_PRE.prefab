@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4140902313676612}
   - component: {fileID: 33215499768043822}
   - component: {fileID: 23023225729303408}
+  - component: {fileID: 4864858163851600483}
   m_Layer: 0
   m_Name: EA04_Trees_Tire_01d
   m_TagString: Untagged
@@ -90,6 +91,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!64 &4864858163851600483
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683158832751376}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: 3558a1f932a73dc4fabfc06214f0941d, type: 3}
 --- !u!1 &1848985810361894
 GameObject:
   m_ObjectHideFlags: 0
@@ -99,8 +122,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4714209696776622}
-  - component: {fileID: 4754148747228002439}
-  - component: {fileID: 189899415429757291}
   m_Layer: 0
   m_Name: EA04_Trees_Tire_01d_PRE
   m_TagString: Untagged
@@ -124,45 +145,3 @@ Transform:
   - {fileID: 4140902313676612}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &4754148747228002439
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1848985810361894}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1.6, y: 5, z: 1.5}
-  m_Center: {x: 0, y: 2.5, z: -0.2}
---- !u!65 &189899415429757291
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1848985810361894}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 5, y: 15, z: 5.5}
-  m_Center: {x: 0.9, y: 12, z: 0.9}

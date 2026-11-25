@@ -10,7 +10,7 @@ public class UIScriptBabyBirds : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // On r�cup�re le component "TextMeshPro - Text (UI)"
+        // On récupère le component "TextMeshPro - Text (UI)"
         m_TextMeshPro = GetComponent<TMP_Text>();
         GM = FindAnyObjectByType<GameManager>();
     }
@@ -18,7 +18,7 @@ public class UIScriptBabyBirds : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-          m_TextMeshPro.text = "Donnnés aux oisillons : " + GM.getBabyBirdsScore();
+          m_TextMeshPro.text = "Oisillons nourris : " + GM.getBabyBirdsScore() + "/" + GameManager.nbOisillons;
     
     }
 }

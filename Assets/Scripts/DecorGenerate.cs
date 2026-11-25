@@ -25,6 +25,7 @@ public class DecorGenerate : MonoBehaviour
                 GenerateTree(tree);
             }
         }
+        Debug.Log("[Génération] " + placed.Count + " décors placés sur " + trees.Length * count);
     }
 
     void GenerateTree(GameObject prefab)

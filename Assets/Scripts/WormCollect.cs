@@ -10,12 +10,20 @@ public class WormCollect : MonoBehaviour
     void Start()
     {
         GM = FindAnyObjectByType<GameManager>();
+        if (GM == null) Debug.LogError("[Ver] GameManager absent de la scène");
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.CompareTag("Worm"))
+        if(!other.CompareTag("Worm")) return;
+
+        if(GM.getScore() >= GameManager.maxVers)
         {
+            Debug.Log("[Ver] touché mais bec plein");
+        }
+        else
+        {
+            Debug.Log("[Ver] attrapé à " + other.transform.position);
             
             GM.scoreModify(1);
             Destroy(other.gameObject);

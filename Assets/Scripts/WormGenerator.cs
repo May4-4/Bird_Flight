@@ -14,13 +14,13 @@ public class WormGenerator : MonoBehaviour
         
         groundBounds = GameObject.Find("Ground").GetComponent<Renderer>().bounds;
         wormBounds = worm.GetComponent<Renderer>().bounds;
-        Debug.Log(wormBounds);
         wormOffsetX = wormBounds.size.x / 2f;
         wormOffsetZ = wormBounds.size.z / 2f;
         for (int i = 0;i < maxWorm; i++)
         {
             createWorm();
         }
+        Debug.Log("[Génération] " + maxWorm + " vers");
     }
 
     // Update is called once per frame
