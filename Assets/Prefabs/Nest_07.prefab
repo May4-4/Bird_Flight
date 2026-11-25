@@ -100,7 +100,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4969414230066183805}
-  - component: {fileID: 192801840500508940}
   - component: {fileID: 8966960958237490191}
   m_Layer: 0
   m_Name: Nest_07
@@ -128,34 +127,6 @@ Transform:
   - {fileID: 3258206738517606337}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!205 &192801840500508940
-LODGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5745809470671152327}
-  serializedVersion: 3
-  m_LocalReferencePoint: {x: 0.0017812252, y: 0.05604194, z: 0.006420344}
-  m_Size: 0.63963604
-  m_FadeMode: 0
-  m_AnimateCrossFading: 0
-  m_LastLODIsBillboard: 0
-  m_LODs:
-  - screenRelativeHeight: 0.25
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 1124903315449209045}
-  - screenRelativeHeight: 0.125
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 0}
-  - screenRelativeHeight: 0.01
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 0}
-  m_Enabled: 1
-  m_GlobalIlluminationLOD: 0
 --- !u!64 &8966960958237490191
 MeshCollider:
   m_ObjectHideFlags: 0
