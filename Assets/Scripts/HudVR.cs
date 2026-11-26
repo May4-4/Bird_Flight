@@ -2,15 +2,12 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
-// Panneau (minimap + scores) affiché dans le casque, dans le coin bas droit de la vue.
-// Il suit la position de la tête mais l'orientation de l'oiseau, pas celle du regard :
-// il reste hors du champ central et on tourne les yeux vers lui pour le lire.
-// Sans casque (vue Game), le champ est plus étroit : le panneau se cale dans le coin de l'écran.
+// Panneau (minimap + scores) attaché à la tête, dans le coin bas gauche de la vue.
+// Sans casque (vue Game), le panneau se cale dans le coin bas gauche de l'écran.
 public class HudVR : MonoBehaviour
 {
     public Transform head;      // caméra du casque
-    public Transform origin;    // XR Origin
-    public Vector3 offset = new Vector3(0.42f, -0.30f, 0.65f);   // m : droite, haut, avant
+    public Vector3 offset = new Vector3(-0.32f, -0.22f, 0.65f);   // m : droite, haut, avant
 
     const float Marge = 0.02f;  // m, entre le panneau et le bord de la vue Game
 
@@ -19,6 +16,7 @@ public class HudVR : MonoBehaviour
     void Awake()
     {
         cam = head.GetComponent<Camera>();
+        transform.SetParent(head, false);   // attaché à la tête
 
         // Toujours dessiné par-dessus le décor (sinon le sol ou une branche le cache).
         // Les textes ont déjà un matériau "Overlay".
@@ -31,24 +29,24 @@ public class HudVR : MonoBehaviour
     {
         if (cam.stereoEnabled)
         {
-            transform.position = head.position + origin.rotation * offset;
-            transform.rotation = Quaternion.LookRotation(transform.position - head.position, origin.up);
+            transform.localPosition = offset;
+            transform.localRotation = Quaternion.LookRotation(offset);   // face aux yeux
         }
         else
         {
-            transform.position = head.position + origin.rotation * OffsetSansCasque();
-            transform.rotation = origin.rotation;
+            transform.localPosition = OffsetSansCasque();
+            transform.localRotation = Quaternion.identity;
         }
     }
 
-    // Collé au coin bas droit de ce que la caméra affiche
+    // Collé au coin bas gauche de ce que la caméra affiche
     Vector3 OffsetSansCasque()
     {
         Vector2 demi = ((RectTransform)transform).rect.size * transform.localScale.x * 0.5f;
         float hauteur = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * offset.z;
         float largeur = hauteur * cam.aspect;
         return new Vector3(
-            largeur - demi.x - Marge,
+            demi.x + Marge - largeur,
             demi.y + Marge - hauteur,
             offset.z);
     }
