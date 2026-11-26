@@ -1,68 +1,66 @@
 using System.Collections;
 using UnityEngine;
 
+/*
+ * Rigidbody NON kinematic, SANS gravité.
+ * La physique gère les collisions (nid, arbre, sol),
+ * et c'est nous qui modifions rb.linearVitesse.
+ */
 [RequireComponent(typeof(Rigidbody))]
 public class XRBirdController : MonoBehaviour
 {
     [Header("Références XR")]
-    public Transform head;          // Main Camera
-    public Transform leftHand;
-    public Transform rightHand;
-    public Transform cameraOffset;  // parent de la caméra et des manettes
+    public Transform teteControl;
+    public Transform aileGaucheControl;   // Left Controller
+    public Transform aileDroiteControl;  // Right Controller
+    public Transform objetCameraOffset;
 
-    [Header("Visuel")]
-    public Transform birdModel;     // modèle de l'oiseau (enfant du rig), optionnel
-
-    [Header("Morphologie")]
-    public float birdEyeHeight = 0.4f;
-    public float armToEyeRatio = 0.47f;
+    public float HauteurYeuxOiseauxVoulue = 0.4f; // hauteur des yeux de l'oiseau
 
     [Header("Battement")]
-    public float directionThreshold = 0.2f;
-    public float minFlapRatio = 0.3f;
-    public float fullFlapRatio = 1.0f;
+    public float minConsiderationDescente = 0.2f;  // m/s : seuil à partir duquel on considère que ça descend
+    public float minBattementDetecteRation = 0.3f;       // part du bras minimum parcourue pour un battement
+    public float maxBattementDetecteRation = 1.0f;      // part du bras donnant un battement maximal
 
     [Header("Poussée (m/s²)")]
-    public float thrustDuration = 0.3f;
-    public float maxThrust = 1.5f;
-    public float takeoffUpAccel = 30f;
-    public float flapUpAccel = 20f;
-    public float flapForwardAccel = 15f;
+    public float pousseeDuree = 0.3f;    // durée de la poussée pour un battement de 1 (s)
+    public float maxPoussee = 5f;
+    public float SupEnvolForce = 30f;      // au sol
+    public float volHautForce = 20f;         // en vol
+    public float volAvantForce = 5f;     // on avance un peu à chaque battement
+    public float maxAvantVitesse = 12f;
+
+    [Header("Portance")]
+    [Range(0f, 1f)]
+    public float ratioMaxReductionDescente = 0.85f;    // réduit la descente jusqu'à 85 %
+    public float vitesseAtteinteMaxReduction = 4f;           // vitesse avant pour la portance max //à mieux comprendre
 
     [Header("Descente")]
-    public float sinkSpeed = 3f;   // m/s de chute sans battre
-    public float sinkAccel = 3f;     // rapidité pour atteindre cette vitesse
+    public float vitesseDescente = 1.5f;    // m/s sans portance
+    public float descenteAccel = 3f;        // rapidité pour atteindre cette vitesse //à retirer
 
-    [Header("Traînée / vitesse")]
-    public float dragCoefficient = 0.08f;
-    public float groundFriction = 4f;
-    public float maxForwardSpeed = 12f;
+    [Header("Traînée")]
+    public float dragCoefficient = 0.08f; //à mieux comprendre
 
-    [Header("Virage")]
-    public float turnSpeed = 50f;
-    public float bankDeadZone = 0.15f;
-    public float bankMaxRatio = 0.8f;
 
-    [Header("Sol")]
-    public LayerMask groundMask;
-    public float groundProbeHeight = 2f;
+    [Header("Tourner")]
+    public float maxDegreeTourner = 40f;           // degrés/s au maximum
+    public float minConsiderationTourne = 0.15f;   // 15 % du bras : en dessous, on ignore
+    public float maxConsiderationTourne = 0.8f;    // 80 % du bras : virage maximal
 
-    [Header("Debug")]
-    [SerializeField] private bool isGrounded;
-    [SerializeField] private Vector3 velocity;
-
+    
+    private bool bSurSol;
     private Rigidbody rb;
-    private bool calibrated;
-    private float armLength;
+    private bool bCalibre;
+    private float tailleBras;
 
-    private float lastLeftY, lastRightY;
-    private bool isDownstroke;
-    private float startLeftY, startRightY;
-    private float thrustAmount;
-    private float bankInput;
-
-    // Décalage entre l'avant du rig et le regard du casque au moment de la calibration
-    private Quaternion forwardOffset = Quaternion.identity;
+    private float dernierPosGauche, dernierPosDroite;
+    private bool bBrasBas;
+    private float debutGaucheY, debutDroiteY;
+    private float Force;
+    private float tourne;
+    private float pousseTimer; 
+   
 
     // ==================================================
     // INITIALISATION
@@ -72,39 +70,31 @@ public class XRBirdController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = false;
         rb.useGravity = false;
-        rb.interpolation = RigidbodyInterpolation.Interpolate; // évite les saccades caméra
+        rb.constraints = RigidbodyConstraints.FreezeRotation; // pas de culbute aux collisions
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-        // Rig strictement à plat (lacet uniquement) : horizon droit
-        rb.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
-        transform.rotation = rb.rotation;
-
-        yield return new WaitForSeconds(0.5f);   // attendre le tracking
-        Calibrate();
+        yield return new WaitForSeconds(0.5f); // attendre le tracking du casque
+        Calibration();
     }
 
-    // Peut être rappelée à tout moment (ex : bouton de manette) pour recentrer
-    public void Calibrate()
+    public void Calibration()
     {
-        // --- Direction de vol = regard du casque (la vue ne tourne pas) ---
-        Vector3 f = transform.InverseTransformDirection(head.forward);
-        float yaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg;
-        forwardOffset = Quaternion.Euler(0f, yaw, 0f);
+        float Height = teteControl.localPosition.y;   // hauteur réelle des yeux
+        tailleBras = Height * 0.5f;
 
-        if (birdModel != null)
-            birdModel.localRotation = forwardOffset;
+        Vector3 p = objetCameraOffset.localPosition;
+        p.y = HauteurYeuxOiseauxVoulue - Height;          // yeux ramenés à hauteur d'oiseau
+        objetCameraOffset.localPosition = p;
 
-        // --- Hauteur oiseau ---
-        float eyeHeight = head.localPosition.y;
-        armLength = eyeHeight * armToEyeRatio;
+        dernierPosGauche  = transform.InverseTransformPoint(aileGaucheControl.position).y;
+        dernierPosDroite = transform.InverseTransformPoint(aileDroiteControl.position).y;
 
-        Vector3 p = cameraOffset.localPosition;
-        p.y = birdEyeHeight - eyeHeight;
-        cameraOffset.localPosition = p;
+        //on ramène la camera à nous
+        Vector3 teteControlLocal = transform.InverseTransformPoint(teteControl.position);
+        objetCameraOffset.localPosition -= new Vector3(teteControlLocal.x, 0f, teteControlLocal.z);
 
-        lastLeftY  = transform.InverseTransformPoint(leftHand.position).y;
-        lastRightY = transform.InverseTransformPoint(rightHand.position).y;
-
-        calibrated = true;
+        bSurSol = true;
+        bCalibre = true;
     }
 
     // ==================================================
@@ -112,50 +102,54 @@ public class XRBirdController : MonoBehaviour
     // ==================================================
     void Update()
     {
-        if (!calibrated) return;
+        if (!bCalibre) return;
 
-        float leftY  = transform.InverseTransformPoint(leftHand.position).y;
-        float rightY = transform.InverseTransformPoint(rightHand.position).y;
+        float leftY  = transform.InverseTransformPoint(aileGaucheControl.position).y;
+        float rightY = transform.InverseTransformPoint(aileDroiteControl.position).y;
 
-        // --- Battement ---
-        float leftVy  = (leftY  - lastLeftY)  / Time.deltaTime;
-        float rightVy = (rightY - lastRightY) / Time.deltaTime;
-        lastLeftY  = leftY;
-        lastRightY = rightY;
+        float leftVy  = (leftY  - dernierPosGauche)  / Time.deltaTime;
+        float rightVy = (rightY - dernierPosDroite) / Time.deltaTime;
+        dernierPosGauche  = leftY;
+        dernierPosDroite = rightY;
 
-        bool bothGoingDown = leftVy < -directionThreshold && rightVy < -directionThreshold;
+        bool bothGoingDown = leftVy < -minConsiderationDescente && rightVy < -minConsiderationDescente;
 
-        if (bothGoingDown && !isDownstroke)
+        if (bothGoingDown && !bBrasBas)
         {
-            isDownstroke = true;
-            startLeftY  = leftY;
-            startRightY = rightY;
+            // Début de la descente des bras
+            bBrasBas = true;
+            debutGaucheY  = leftY;
+            debutDroiteY = rightY;
         }
-        else if (!bothGoingDown && isDownstroke)
+        else if (!bothGoingDown && bBrasBas)
         {
-            isDownstroke = false;
-            float amplitude = Mathf.Min(startLeftY - leftY, startRightY - rightY);
-            float ratio = amplitude / armLength;
+            // Fin de la descente : on juge le battement
+            bBrasBas = false;
 
-            if (ratio >= minFlapRatio)
+            float amplitude = Mathf.Min(debutGaucheY - leftY, debutDroiteY - rightY);
+            float ratio = amplitude / tailleBras;
+
+            if (ratio >= minBattementDetecteRation)
             {
-                float strength = Mathf.InverseLerp(minFlapRatio, fullFlapRatio, ratio);
-                thrustAmount = Mathf.Min(thrustAmount + strength, maxThrust);
+                Force = Mathf.InverseLerp(minBattementDetecteRation, maxBattementDetecteRation, ratio);
+                PousseeTimer = Mathf.Min(PousseeTimer + Force, maxPoussee);
+                Debug.Log($"Battement ! Ratio: {ratio:F2} | Force: {Force:F2} | Timer: {PousseeTimer:F2}");
             }
         }
 
-        // --- Virage (bloqué pendant un battement) ---
-        if (isDownstroke || thrustAmount > 0f)
+        // Virage, bloqué pendant un battement
+        if (bBrasBas || PousseeTimer > 0f)
         {
-            bankInput = 0f;
+            tourne = 0f;
         }
         else
         {
-            float bankRatio = (rightY - leftY) / armLength;
-            float absRatio = Mathf.Abs(bankRatio);
-            bankInput = absRatio < bankDeadZone
+            float bendRatio = (leftY - rightY) / tailleBras;
+            float absbendRatio = Mathf.Abs(bendRatio);
+
+            tourne = absbendRatio < minConsiderationTourne
                 ? 0f
-                : Mathf.Sign(bankRatio) * Mathf.InverseLerp(bankDeadZone, bankMaxRatio, absRatio);
+                : Mathf.Sign(bendRatio) * Mathf.InverseLerp(minConsiderationTourne, maxConsiderationTourne, absbendRatio);
         }
     }
 
@@ -164,99 +158,96 @@ public class XRBirdController : MonoBehaviour
     // ==================================================
     void FixedUpdate()
     {
-        if (!calibrated) return;
+        if (!bCalibre) return;
         float dt = Time.fixedDeltaTime;
 
-        HandleTurn(dt);
-        ApplyThrust(dt);
-        ApplySink(dt);
-        ApplyDrag(dt);
-        LimitForwardSpeed();
-        Move(dt);
-    }
+        // On lit la vitesse actuelle (la physique a pu la modifier : collisions)
+        Vector3 vitesse = rb.linearVelocity;
 
-    Vector3 Forward()
-    {
-        Vector3 f = rb.rotation * forwardOffset * Vector3.forward;
-        f.y = 0f;
-        return f.normalized;
-    }
-
-    void HandleTurn(float dt)
-    {
-        if (isGrounded || bankInput == 0f) return;
-
-        Quaternion turn = Quaternion.Euler(0f, bankInput * turnSpeed * dt, 0f);
-        rb.MoveRotation(rb.rotation * turn);
-        velocity = turn * velocity;
-    }
-
-    void ApplyThrust(float dt)
-    {
-        if (thrustAmount <= 0f) return;
-
-        float upAccel = isGrounded ? takeoffUpAccel : flapUpAccel;
-        Vector3 accel = Vector3.up * upAccel + Forward() * flapForwardAccel;
-
-        velocity += accel * thrustAmount * dt;
-        thrustAmount = Mathf.MoveTowards(thrustAmount, 0f, dt / thrustDuration);
-    }
-
-    void ApplySink(float dt)
-    {
-        if (isGrounded && velocity.y <= 0f) return;
-
-        // Remplace la gravité : on tend doucement vers -sinkSpeed
-        velocity.y = Mathf.MoveTowards(velocity.y, -sinkSpeed, sinkAccel * dt);
-    }
-
-    void ApplyDrag(float dt)
-    {
-        Vector3 h = new Vector3(velocity.x, 0f, velocity.z);
-        float speed = h.magnitude;
-        if (speed < 0.01f) return;
-
-        float decel = speed * speed * dragCoefficient + (isGrounded ? groundFriction : 0f);
-        float newSpeed = Mathf.Max(0f, speed - decel * dt);
-
-        h = h / speed * newSpeed;
-        velocity.x = h.x;
-        velocity.z = h.z;
-    }
-
-    void LimitForwardSpeed()
-    {
-        Vector3 f = Forward();
-        float forwardSpeed = Vector3.Dot(velocity, f);
-        if (forwardSpeed > maxForwardSpeed)
-            velocity -= f * (forwardSpeed - maxForwardSpeed);
-    }
-
-    void Move(float dt)
-    {
-        Vector3 next = rb.position + velocity * dt;
-
-        float groundY = GetGroundY(next);
-        isGrounded = next.y <= groundY + 0.01f;
-
-        if (isGrounded)
+        if (PousseeTimer > 0f)
         {
-            next.y = groundY;
-            if (velocity.y < 0f) velocity.y = 0f;
+            vitesse = ApplyPoussee(vitesse, dt);
+            PousseeTimer = Mathf.MoveTowards(PousseeTimer, 0f, dt / pousseeDuree);
+            Debug.Log($"applypoussee ! vitesse: {vitesse:F2} | PousseeTimer: {PousseeTimer:F2} ");
         }
 
-        rb.MovePosition(next);
+        float freineDescente = ApplyLift(vitesse);
+        vitesse = ApplyDescente(vitesse, dt, freineDescente );
+        vitesse = ApplyDrag(vitesse, dt);
+        vitesse = LimitForwardSpeed(vitesse);
+        vitesse = Turn(vitesse, dt);
+
+        // Friction au sol
+        if (bSurSol)
+        {
+            vitesse.x *= 0.9f;
+            vitesse.z *= 0.9f;
+        }
+
+        
+        rb.linearVitesse = vitesse;
     }
 
-    float GetGroundY(Vector3 pos)
+    Vector3 ApplyPoussee(Vector3 vitesse, float dt)
     {
-        Vector3 origin = pos + Vector3.up * groundProbeHeight;
-        Debug.DrawRay(origin, Vector3.down * 100f, Color.red);
+        Vector3 force = bSurSol
+            ? Vector3.up * SupEnvolForce + transform.forward * volAvantForce
+            : Vector3.up * volHautForce + transform.forward * volAvantForce;
 
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 100f,
-                            groundMask, QueryTriggerInteraction.Ignore))
-            return hit.point.y;
-
-        return float.NegativeInfinity;
+        return vitesse + force * PousseeTimer * dt;
     }
+
+    float ApplyLift(Vector3 vitesse)
+    {
+        float freineDescente =0f;
+        if (bSurSol)
+        {
+           
+            return;
+        }
+
+        float forwardSpeed = Mathf.Max(0f, Vector3.Dot(vitesse, transform.forward));
+        float liftRatio = Mathf.Clamp01(forwardSpeed / vitesseAtteinteMaxReduction);
+        freineDescente = ratioMaxReductionDescente * liftRatio * liftRatio;
+        return freineDescente;
+    }
+
+    Vector3 ApplyDescente(Vector3 vitesse, float dt, float freinedescente)
+    {
+        if (bSurSol) return vitesse;
+
+        // Remplace la gravité : la portance réduit la vitesse de descente
+        float descente = vitesseDescente * (1f - freinedescente);
+        vitesse.y = Mathf.MoveTowards(vitesse.y, -descente, descenteAccel * dt);
+        return vitesse;
+    }
+
+    Vector3 ApplyDrag(Vector3 vitesse, float dt)
+    {
+        // Freine proportionnellement à la vitesse au carré
+        return vitesse - vitesse * vitesse.magnitude * dragCoefficient * dt;
+    }
+
+    Vector3 LimitForwardSpeed(Vector3 vitesse)
+    {
+        float forwardSpeed = Vector3.Dot(vitesse, transform.forward);
+        if (forwardSpeed > maxAvantVitesse)
+            vitesse -= transform.forward * (forwardSpeed - maxAvantVitesse);
+        return vitesse;
+    }
+
+    Vector3 Turn(Vector3 vitesse, float dt)
+    {
+        if (bSurSol || tourne == 0f) return vitesse;
+        Quaternion rotation = Quaternion.Euler(0f, tourne * maxDegreeTourner * dt, 0f);
+        rb.MoveRotation(rb.rotation * rotation);
+        return rotation * vitesse;   // la vitesse tourne avec l'oiseau
+    }
+
+    // ==================================================
+    // SOL : les collisions fonctionnent à nouveau
+    // ==================================================
+    void OnCollisionEnter(Collision c) { if (c.gameObject.CompareTag("Ground")) bSurSol = true; }
+    void OnCollisionStay(Collision c)  { if (c.gameObject.CompareTag("Ground")) bSurSol = true; }
+    void OnCollisionExit(Collision c)  { if (c.gameObject.CompareTag("Ground")) bSurSol = false; }
 }
