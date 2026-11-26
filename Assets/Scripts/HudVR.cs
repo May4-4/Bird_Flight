@@ -4,11 +4,11 @@ using UnityEngine.UI;
 
 // Panneau (minimap + scores) fixé en bas, un peu à gauche de la vue : enfant de la caméra, il suit la tête.
 // On ne peut pas tourner la tête vers lui, seulement les yeux : il reste donc proche du centre
-// (environ 11° à gauche, 21° en bas), avec la même position avec ou sans casque.
+// (environ 8° à gauche, 19° en bas), avec la même position avec ou sans casque.
 public class HudVR : MonoBehaviour
 {
     public Transform head;      // caméra du casque
-    public Vector3 positionVue = new Vector3(-0.18f, -0.34f, 0.90f);   // m : droite, haut, avant
+    public Vector3 positionVue = new Vector3(-0.12f, -0.31f, 0.90f);   // m : droite, haut, avant
 
     void Awake()
     {

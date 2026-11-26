@@ -171,7 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HudVR
   head: {fileID: 122168053}
-  positionVue: {x: -0.18, y: -0.34, z: 0.9}
+  positionVue: {x: -0.12, y: -0.31, z: 0.9}
 --- !u!223 &51718517
 Canvas:
   m_ObjectHideFlags: 0
@@ -618,8 +618,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 4.1, y: -122}
-  m_SizeDelta: {x: 280, y: 50}
+  m_AnchoredPosition: {x: 0, y: -128}
+  m_SizeDelta: {x: 280, y: 72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &283622273
 GameObject:
@@ -1013,8 +1013,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -12}
-  m_SizeDelta: {x: 280, y: 24}
+  m_AnchoredPosition: {x: 0, y: -18}
+  m_SizeDelta: {x: 280, y: 34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &430407989
 MonoBehaviour:
@@ -1075,8 +1075,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 26
+  m_fontSizeBase: 26
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1092,7 +1092,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -1959,8 +1959,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 12}
-  m_SizeDelta: {x: 280, y: 24}
+  m_AnchoredPosition: {x: 0, y: 18}
+  m_SizeDelta: {x: 280, y: 34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1130103151
 MonoBehaviour:
@@ -2021,8 +2021,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 26
+  m_fontSizeBase: 26
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -2038,7 +2038,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -2282,7 +2282,7 @@ MonoBehaviour:
   - {fileID: 1898819963494740863, guid: 9bd7e60f16c0c9b4fa05f049e3cd8f1d, type: 3}
   minScale: 1
   maxScale: 4
-  count: 100
+  count: 10
   notAround:
   - {fileID: 793215974}
   - {fileID: 0}
