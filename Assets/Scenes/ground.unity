@@ -171,7 +171,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HudVR
   head: {fileID: 122168053}
+<<<<<<< Updated upstream
   positionVue: {x: -0.12, y: -0.31, z: 0.9}
+=======
+  positionVue: {x: -0.12, y: -0.28, z: 0.9}
+>>>>>>> Stashed changes
 --- !u!223 &51718517
 Canvas:
   m_ObjectHideFlags: 0
@@ -793,22 +797,22 @@ MonoBehaviour:
   fullFlapRatio: 1
   thrustDuration: 1
   maxThrust: 1.5
-  takeoffUpAccel: 30
+  takeoffUpAccel: 15
   flapUpAccel: 20
-  flapForwardAccel: 20
-  sinkSpeed: 5
-  sinkAccel: 7
+  flapForwardAccel: 15
+  sinkSpeed: 7
+  sinkAccel: 10
   dragCoefficient: 0.08
   groundFriction: 4
   maxForwardSpeed: 15
-  turnSpeed: 50
+  turnSpeed: 40
   bankDeadZone: 0.15
   bankMaxRatio: 0.8
   groundMask:
     serializedVersion: 2
-    m_Bits: 0
-  groundProbeHeight: 2
-  isGrounded: 0
+    m_Bits: 64
+  groundProbeHeight: 3
+  isGrounded: 1
   velocity: {x: 0, y: 0, z: 0}
 --- !u!114 &283622283
 MonoBehaviour:
@@ -1140,7 +1144,7 @@ GameObject:
   - component: {fileID: 492450847}
   - component: {fileID: 492450846}
   - component: {fileID: 492450845}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ground
   m_TagString: Ground
   m_Icon: {fileID: 0}
@@ -1157,7 +1161,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 200, y: 1, z: 200}
+  m_LocalScale: {x: 100, y: 1, z: 100}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1298,7 +1302,7 @@ GameObject:
   m_Component:
   - component: {fileID: 713421256}
   - component: {fileID: 713421257}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: sommet
   m_TagString: Ground
   m_Icon: {fileID: 0}
@@ -1314,8 +1318,8 @@ Transform:
   m_GameObject: {fileID: 713421255}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.13, y: 37.42, z: -1.44}
-  m_LocalScale: {x: 6, y: 3, z: 6}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 793215976}
@@ -1959,8 +1963,13 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
+<<<<<<< Updated upstream
   m_AnchoredPosition: {x: 0, y: 18}
   m_SizeDelta: {x: 280, y: 34}
+=======
+  m_AnchoredPosition: {x: 0, y: 44}
+  m_SizeDelta: {x: 280, y: 24}
+>>>>>>> Stashed changes
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1130103151
 MonoBehaviour:
@@ -2027,7 +2036,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
