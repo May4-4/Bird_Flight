@@ -59,7 +59,7 @@ public class XRBirdController : MonoBehaviour
     private float debutGaucheY, debutDroiteY;
     private float Force;
     private float tourne;
-    private float pousseTimer; 
+    private float PousseeTimer; 
    
 
     // ==================================================
@@ -185,7 +185,7 @@ public class XRBirdController : MonoBehaviour
         }
 
         
-        rb.linearVitesse = vitesse;
+        rb.linearVelocity = vitesse;
     }
 
     Vector3 ApplyPoussee(Vector3 vitesse, float dt)
@@ -199,16 +199,16 @@ public class XRBirdController : MonoBehaviour
 
     float ApplyLift(Vector3 vitesse)
     {
-        float freineDescente =0f;
+        
         if (bSurSol)
         {
            
-            return;
+            return 0f;
         }
 
         float forwardSpeed = Mathf.Max(0f, Vector3.Dot(vitesse, transform.forward));
         float liftRatio = Mathf.Clamp01(forwardSpeed / vitesseAtteinteMaxReduction);
-        freineDescente = ratioMaxReductionDescente * liftRatio * liftRatio;
+        float freineDescente = ratioMaxReductionDescente * liftRatio * liftRatio;
         return freineDescente;
     }
 
