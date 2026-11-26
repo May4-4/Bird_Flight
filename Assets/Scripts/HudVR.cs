@@ -2,21 +2,17 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
-// Panneau (minimap + scores) attaché à la tête, dans le coin bas gauche de la vue.
-// Sans casque (vue Game), le panneau se cale dans le coin bas gauche de l'écran.
+// Panneau (minimap + scores) fixé en bas, un peu à gauche de la vue : enfant de la caméra, il suit la tête.
+// On ne peut pas tourner la tête vers lui, seulement les yeux : il reste donc proche du centre
+// (environ 11° à gauche, 21° en bas), avec la même position avec ou sans casque.
 public class HudVR : MonoBehaviour
 {
     public Transform head;      // caméra du casque
-    public Vector3 offset = new Vector3(-0.32f, -0.22f, 0.65f);   // m : droite, haut, avant
-
-    const float Marge = 0.02f;  // m, entre le panneau et le bord de la vue Game
-
-    Camera cam;
+    public Vector3 positionVue = new Vector3(-0.18f, -0.34f, 0.90f);   // m : droite, haut, avant
 
     void Awake()
     {
-        cam = head.GetComponent<Camera>();
-        transform.SetParent(head, false);   // attaché à la tête
+        transform.SetParent(head, false);
 
         // Toujours dessiné par-dessus le décor (sinon le sol ou une branche le cache).
         // Les textes ont déjà un matériau "Overlay".
@@ -27,27 +23,7 @@ public class HudVR : MonoBehaviour
 
     void LateUpdate()
     {
-        if (cam.stereoEnabled)
-        {
-            transform.localPosition = offset;
-            transform.localRotation = Quaternion.LookRotation(offset);   // face aux yeux
-        }
-        else
-        {
-            transform.localPosition = OffsetSansCasque();
-            transform.localRotation = Quaternion.identity;
-        }
-    }
-
-    // Collé au coin bas gauche de ce que la caméra affiche
-    Vector3 OffsetSansCasque()
-    {
-        Vector2 demi = ((RectTransform)transform).rect.size * transform.localScale.x * 0.5f;
-        float hauteur = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * offset.z;
-        float largeur = hauteur * cam.aspect;
-        return new Vector3(
-            demi.x + Marge - largeur,
-            demi.y + Marge - hauteur,
-            offset.z);
+        transform.localPosition = positionVue;
+        transform.localRotation = Quaternion.LookRotation(positionVue);   // face aux yeux
     }
 }
