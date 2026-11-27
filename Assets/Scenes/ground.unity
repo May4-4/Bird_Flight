@@ -781,35 +781,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0aed9965ac0ea739a118e5b5b109187, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::XRBirdController
-  head: {fileID: 122168053}
-  leftHand: {fileID: 726271876}
-  rightHand: {fileID: 1180111188}
-  cameraOffset: {fileID: 2037080331}
-  birdModel: {fileID: 0}
-  birdEyeHeight: 0.18
-  armToEyeRatio: 0.47
-  directionThreshold: 0.2
-  minFlapRatio: 0.3
-  fullFlapRatio: 1
-  thrustDuration: 1
-  maxThrust: 1.5
-  takeoffUpAccel: 30
-  flapUpAccel: 20
-  flapForwardAccel: 20
-  sinkSpeed: 5
-  sinkAccel: 7
+  teteControl: {fileID: 122168053}
+  aileGaucheControl: {fileID: 726271876}
+  aileDroiteControl: {fileID: 1180111188}
+  objetCameraOffset: {fileID: 2037080331}
+  HauteurYeuxOiseauxVoulue: 0.3
+  minConsiderationDescente: 0.2
+  minBattementDetecteRation: 0.3
+  maxBattementDetecteRation: 0.8
+  pousseeDuree: 0.3
+  maxPoussee: 5
+  SupEnvolForce: 20
+  volHautForce: 20
+  volAvantForce: 20
+  maxAvantVitesse: 12
+  ratioMaxReductionDescente: 0.85
+  vitesseAtteinteMaxReduction: 6
+  vitesseDescente: 6
+  descenteAccel: 3
   dragCoefficient: 0.08
-  groundFriction: 4
-  maxForwardSpeed: 15
-  turnSpeed: 50
-  bankDeadZone: 0.15
-  bankMaxRatio: 0.8
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 0
-  groundProbeHeight: 2
-  isGrounded: 0
-  velocity: {x: 0, y: 0, z: 0}
+  maxDegreeTourner: 40
+  minConsiderationTourne: 0.15
+  maxConsiderationTourne: 0.8
 --- !u!114 &283622283
 MonoBehaviour:
   m_ObjectHideFlags: 0

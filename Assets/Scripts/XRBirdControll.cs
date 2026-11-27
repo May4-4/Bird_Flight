@@ -55,7 +55,7 @@ public class XRBirdController : MonoBehaviour
     private float tailleBras;
 
     private float dernierPosGauche, dernierPosDroite;
-    private bool bBrasBas;
+    private bool battement;
     private float debutGaucheY, debutDroiteY;
     private float Force;
     private float tourne;
@@ -73,14 +73,14 @@ public class XRBirdController : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotation; // pas de culbute aux collisions
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-        yield return new WaitForSeconds(0.5f); // attendre le tracking du casque
+        yield return new WaitForSeconds(0.5f); // attendre le tracking du casque et des contrôleurs pendant une demi-seconde
         Calibration();
     }
 
     public void Calibration()
     {
         float Height = teteControl.localPosition.y;   // hauteur réelle des yeux
-        tailleBras = Height * 0.5f;
+        tailleBras = Height * 0.5f; // bras au mileu de la hauteur des yeux
 
         Vector3 p = objetCameraOffset.localPosition;
         p.y = HauteurYeuxOiseauxVoulue - Height;          // yeux ramenés à hauteur d'oiseau
@@ -93,7 +93,7 @@ public class XRBirdController : MonoBehaviour
         Vector3 teteControlLocal = transform.InverseTransformPoint(teteControl.position);
         objetCameraOffset.localPosition -= new Vector3(teteControlLocal.x, 0f, teteControlLocal.z);
 
-        bSurSol = true;
+        //bSurSol = true;
         bCalibre = true;
     }
 
@@ -113,18 +113,18 @@ public class XRBirdController : MonoBehaviour
         dernierPosDroite = rightY;
 
         bool bothGoingDown = leftVy < -minConsiderationDescente && rightVy < -minConsiderationDescente;
-
-        if (bothGoingDown && !bBrasBas)
+        // début du battement
+        if (bothGoingDown && !battement)
         {
             // Début de la descente des bras
-            bBrasBas = true;
+            battement = true;
             debutGaucheY  = leftY;
             debutDroiteY = rightY;
         }
-        else if (!bothGoingDown && bBrasBas)
+        else if (!bothGoingDown && battement)
         {
             // Fin de la descente : on juge le battement
-            bBrasBas = false;
+            battement = false;
 
             float amplitude = Mathf.Min(debutGaucheY - leftY, debutDroiteY - rightY);
             float ratio = amplitude / tailleBras;
@@ -138,7 +138,7 @@ public class XRBirdController : MonoBehaviour
         }
 
         // Virage, bloqué pendant un battement
-        if (bBrasBas || PousseeTimer > 0f)
+        if (battement || PousseeTimer > 0f)
         {
             tourne = 0f;
         }
@@ -157,13 +157,13 @@ public class XRBirdController : MonoBehaviour
     // MOUVEMENT
     // ==================================================
     void FixedUpdate()
-    {
+    {   
         if (!bCalibre) return;
         float dt = Time.fixedDeltaTime;
 
         // On lit la vitesse actuelle (la physique a pu la modifier : collisions)
         Vector3 vitesse = rb.linearVelocity;
-
+        Debug.Log($"on est au sol:{bSurSol}");
         if (PousseeTimer > 0f)
         {
             vitesse = ApplyPoussee(vitesse, dt);
@@ -202,13 +202,15 @@ public class XRBirdController : MonoBehaviour
         
         if (bSurSol)
         {
-           
+            // On ne freine pas l'oiseau quand on décolle
             return 0f;
         }
 
         float forwardSpeed = Mathf.Max(0f, Vector3.Dot(vitesse, transform.forward));
         float liftRatio = Mathf.Clamp01(forwardSpeed / vitesseAtteinteMaxReduction);
-        float freineDescente = ratioMaxReductionDescente * liftRatio * liftRatio;
+        Debug.Log($"Lift ratio : {liftRatio}");
+        float freineDescente = ratioMaxReductionDescente * liftRatio;
+        Debug.Log($"freineDescente : {freineDescente}");
         return freineDescente;
     }
 
